@@ -7,6 +7,7 @@ import { SeedModule } from './seed/seed.module';
 import { FilesModule } from './files/files.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { AuthModule } from './auth/auth.module';
 
 //en prod synchronize sirve mas en false, ya que se deberian hacer migraciones.
 
@@ -30,6 +31,7 @@ import { join } from 'path';
     CommonModule,
     SeedModule,
     FilesModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [],
