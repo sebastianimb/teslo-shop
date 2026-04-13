@@ -1,4 +1,3 @@
-import { JwtStrategy } from './strategies/jwt-strategy';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   BadRequestException,
@@ -11,13 +10,15 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 
 import * as bcrypt from 'bcrypt';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly jwtStrategy: JwtStrategy,
+    private readonly jwtService: JwtService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -30,8 +31,10 @@ export class AuthService {
       });
       await this.userRepository.save(user);
       const { password: _, ...userWithoutPassword } = user;
-      return userWithoutPassword;
-      //TODO: Retornar el JWT de acceso.
+      return {
+        ...userWithoutPassword,
+        token: this.getJwtToken({ id: user.id }),
+      };
     } catch (error) {
       this.handleDBErrors(error);
     }
@@ -41,7 +44,7 @@ export class AuthService {
     const { password, email } = loginUserDto;
     const user = await this.userRepository.findOne({
       where: { email },
-      select: { email: true, password: true },
+      select: { email: true, password: true, id: true },
     });
 
     if (!user) {
@@ -51,7 +54,7 @@ export class AuthService {
     if (!bcrypt.compareSync(password, user.password)) {
       throw new UnauthorizedException(' Credentials are not valid (password)');
     }
-    return user;
+    return { ...user, token: this.getJwtToken({ id: user.id }) };
 
     //Retornar el JWT de acceso.
   }
@@ -61,5 +64,10 @@ export class AuthService {
       throw new BadRequestException(error.detail);
     }
     throw new InternalServerErrorException(' Please check server logs');
+  }
+
+  private getJwtToken(payload: JwtPayload) {
+    const token = this.jwtService.sign(payload);
+    return token;
   }
 }
