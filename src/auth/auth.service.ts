@@ -55,8 +55,20 @@ export class AuthService {
       throw new UnauthorizedException(' Credentials are not valid (password)');
     }
     return { ...user, token: this.getJwtToken({ id: user.id }) };
+  }
 
-    //Retornar el JWT de acceso.
+  async checkAuthStatus(id: string) {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        isActive: true,
+        roles: true,
+      },
+    });
+    return { ...user, token: this.getJwtToken({ id }) };
   }
 
   private handleDBErrors(error: any): never {
